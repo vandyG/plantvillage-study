@@ -1,0 +1,30 @@
+\appendix
+\section{Appendix}
+\onecolumn
+\begin{table}[ht]
+\centering
+\small
+\begin{tabular}{p{0.28\textwidth} p{0.22\textwidth} p{0.50\textwidth}}
+\hline
+\textbf{Model Class} & \textbf{Reference} & \textbf{Description} \\
+\hline
+\textbf{\href{validated/vision/classification/mobilenet}{MobileNet}} & \href{https://arxiv.org/abs/1801.04381}{Sandler et al.} & Light-weight deep neural network best suited for mobile and embedded vision applications. \newline Top-5 error from paper: $\sim$10\%. \\
+\textbf{\href{validated/vision/classification/resnet}{ResNet}} & \href{https://arxiv.org/abs/1512.03385}{He et al.} & A CNN model (up to 152 layers). Uses shortcut connections to achieve higher accuracy when classifying images. \newline Top-5 error from paper: $\sim$3.6\%. \\
+\textbf{\href{validated/vision/classification/squeezenet}{SqueezeNet}} & \href{https://arxiv.org/abs/1602.07360}{Iandola et al.} & A light-weight CNN model providing AlexNet-level accuracy with ~50x fewer parameters. \newline Top-5 error from paper: $\sim$20\%. \\
+\textbf{\href{validated/vision/classification/vgg}{VGG}} & \href{https://arxiv.org/abs/1409.1556}{Simonyan et al.} & Deep CNN model (up to 19 layers). Similar to AlexNet but uses multiple smaller kernel-sized filters for improved accuracy. \newline Top-5 error from paper: $\sim$8\%. \\
+\textbf{\href{validated/vision/classification/alexnet}{AlexNet}} & \href{https://papers.nips.cc/paper/4824-imagenet-classification-with-deep-convolutional-neural-networks.pdf}{Krizhevsky et al.} & A deep CNN (up to 8 layers) producing a 1000-dim output vector for ImageNet. \newline Top-5 error from paper: $\sim$15\%. \\
+\textbf{\href{validated/vision/classification/inception_and_googlenet/googlenet}{GoogleNet}} & \href{https://arxiv.org/pdf/1409.4842.pdf}{Szegedy et al.} & Deep CNN (up to 22 layers). Smaller and faster than VGG and more detailed than AlexNet. \newline Top-5 error from paper: $\sim$6.7\%. \\
+\textbf{\href{validated/vision/classification/caffenet}{CaffeNet}} & \href{https://ucb-icsi-vision-group.github.io/caffe-paper/caffe.pdf}{Krizhevsky et al.} & Deep CNN variation of AlexNet where max pooling precedes local response normalization to reduce compute and memory. \\
+\textbf{\href{validated/vision/classification/rcnn_ilsvrc13}{RCNN\_ILSVRC13}} & \href{https://arxiv.org/abs/1311.2524}{Girshick et al.} & Pure Caffe implementation of R-CNN for image classification; uses localized regions to classify and extract features. \\
+\textbf{\href{validated/vision/classification/densenet-121}{DenseNet-121}} & \href{https://arxiv.org/abs/1608.06993}{Huang et al.} & Every layer is connected to every other layer, improving gradient flow and feature diversity. \\
+\textbf{\href{validated/vision/classification/inception_and_googlenet/inception_v1}{Inception\_V1}} & \href{https://arxiv.org/abs/1409.4842}{Szegedy et al.} & Same as GoogLeNet but implemented in Caffe2; improves resource utilization and mitigates vanishing gradients. \newline Top-5 error from paper: $\sim$6.7\%. \\
+\textbf{\href{validated/vision/classification/inception_and_googlenet/inception_v2}{Inception\_V2}} & \href{https://arxiv.org/abs/1512.00567}{Szegedy et al.} & Adaptation of Inception v1 with batch normalization; reduced computational cost and improved resolution. \newline Top-5 error from paper: $\sim$4.82\%. \\
+\textbf{\href{validated/vision/classification/shufflenet}{ShuffleNet\_V1}} & \href{https://arxiv.org/abs/1707.01083}{Zhang et al.} & Extremely computation-efficient CNN for mobile devices; ~13x speedup over AlexNet on ARM. \newline Top-1 error from paper: $\sim$32.6\%. \\
+\textbf{\href{validated/vision/classification/shufflenet}{ShuffleNet\_V2}} & \href{https://arxiv.org/abs/1807.11164}{Zhang et al.} & Mobile-focused architecture optimized for speed rather than indirect metrics like FLOPs. \newline Top-1 error from paper: $\sim$30.6\%. \\
+\textbf{\href{validated/vision/classification/zfnet-512}{ZFNet-512}} & \href{https://arxiv.org/abs/1311.2901}{Zeiler et al.} & Deep CNN (up to 8 layers) that increases detectable feature granularity for finer image details. \newline Top-5 error from paper: $\sim$14.3\%. \\
+\textbf{\href{validated/vision/classification/efficientnet-lite4}{EfficientNet-Lite4}} & \href{https://arxiv.org/abs/1905.11946}{Tan et al.} & CNN with far fewer computations and parameters while maintaining strong accuracy and efficiency. \newline Top-5 error from paper: $\sim$2.9\%. \\
+\hline
+\end{tabular}
+\caption{Validated vision classification models (HuggingFace Spaces column omitted).}
+\label{tab:vision-models}
+\end{table}

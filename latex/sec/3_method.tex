@@ -1,0 +1,31 @@
+% \section{Proposed Methods}
+% this section will talk about what models we are using and what are those models
+
+
+
+% \subsection{VGG16}
+% something about VGG that we did some result 
+
+% \subsection{resnet}
+% something about resnet we did
+
+% \subsection{Evaluation Metrics}
+% something about resnet we did
+\section{Deep Learning Architectures}
+Convolutional Neural Networks (CNNs) have revolutionized image-based tasks by automating the feature extraction process that was traditionally done through handcrafted techniques. A CNN typically consists of convolutional layers for spatial feature extraction, pooling layers for dimensionality reduction, and fully connected layers for classification. These networks learn hierarchical representations—starting from low-level edges and textures to high-level patterns such as disease spots or color distortions on plant leaves. In the context of plant disease detection, CNNs enable automated learning of discriminative features from raw images without requiring domain-specific feature engineering.
+
+\subsection{Classic CNNs}
+Early CNN architectures such as AlexNet, VGG, GoogleNet (Inception V1), and CaffeNet laid the foundation for modern deep learning. AlexNet’s success in the 2012 ImageNet Challenge marked a major breakthrough, proving that deep neural networks could significantly outperform traditional computer vision methods. VGG networks, with their use of small 3×3 convolution filters stacked in depth, emphasized simplicity and uniformity, making them a popular choice for feature extraction and transfer learning in early plant disease studies.
+
+GoogleNet and its successors introduced the Inception module, which processes information at multiple scales simultaneously within the same layer. This innovation improved efficiency by combining small and large receptive fields while reducing parameter counts. Although these classic models are now surpassed by more advanced architectures, they remain valuable as baselines for comparative analysis. Their relative simplicity allows researchers to benchmark performance, understand architectural trade-offs, and establish a reference point for evaluating newer networks.
+
+
+\subsection{Lightweight Architectures}
+Lightweight CNN architectures are specifically designed to deliver high accuracy with minimal computational cost, making them ideal for real-time, mobile, and edge-based agricultural systems. Models like MobileNet, ShuffleNet, and SqueezeNet adopt strategies such as depthwise separable convolutions and channel shuffling to drastically reduce the number of parameters and floating-point operations (FLOPs). For example, MobileNet employs depthwise and pointwise convolutions, enabling it to run efficiently on mobile devices while maintaining strong classification accuracy on datasets like PlantVillage.
+
+These lightweight models are crucial for scenarios where computational resources are limited—such as on-field disease detection using smartphones or low-power IoT cameras. Although they may achieve slightly lower accuracy compared to deeper architectures, their energy efficiency and low latency make them highly practical for deployment in remote or underdeveloped agricultural regions. The trade-off between model size and performance is often acceptable given their ability to deliver near real-time feedback to farmers.
+
+\subsection{Deep Architectures}
+Deeper CNN architectures such as ResNet, DenseNet, and EfficientNet push the boundaries of classification accuracy by incorporating innovative connectivity patterns and scaling strategies. ResNet introduced residual learning through skip connections, mitigating the vanishing gradient problem and allowing networks to exceed 100 layers without performance degradation. DenseNet builds on this idea by connecting each layer to every other layer in a feed-forward manner, promoting feature reuse and improving gradient flow. These designs enable richer feature extraction, which is particularly useful for distinguishing visually similar plant diseases.
+
+

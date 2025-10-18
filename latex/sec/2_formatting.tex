@@ -1,0 +1,101 @@
+\section{Dataset}
+
+% Placeholder figure for augmentation examples. User should add the file `sec/Images/haelth_by_type.png` (note the current name) or update the path.
+% \begin{figure}[h]
+%     \centering
+%     \includegraphics[width=\linewidth]{sec/Images/health_by_type.png}
+%     \caption{Example images used for data augmentation }
+% \end{figure}
+For this study, we make use of \textbf{PlantVillage} \cite{plantvillage2015} \cite{Mohanty_Hughes_Salathé_2016} dataset, which is one of the most widely used benchmark datasets for plant disease detection and classification tasks. The dataset consists of 54,303 labeled images of healthy and diseased plant leaves belonging to 14 distinct classes. These classes cover a variety of important crops such as \textbf{Apple, Blueberry,
+Cherry, Corn, Grape, Orange, Peach, Bell Pepper, Potato, Raspberry, Soybean, Squash,
+Strawberry, Tomato}, each with multiple disease categories in addition to healthy leaves. It containes images of 17 fungal diseases, 4 bacterial diseases, 2 mold(oomycete) diseases, 2 viral disease, and 1 disease caused by a mite. 12 crop species also have images of healthy leaves that are not visibly affected by a disease.\cite{plantvillage2015}.
+ \begin{figure}[H]
+    \centering
+    \includegraphics[width=\linewidth]{sec/Images/example_images.png}
+    \caption{Sample images from dataset.}
+\end{figure}
+The images in PlantVillage were originally collected under controlled conditions with uniform backgrounds, making them suitable for initial model training. However, this also introduces a limitation in terms of generalization to real-world conditions, where background noise, varying illumination, and complex environmental factors are present~\cite{noyan2022uncovering}.
+
+
+\begin{table}[ht]
+\centering
+\caption{Crop disease status}
+\label{tab:crop-disease-status}
+\begin{tabular}{lcc}
+\toprule
+Crop Species & Diseased & Health \\
+\midrule
+Apple        &1527     & 1645    \\
+Blueberry    & 0       & 1502    \\
+Cherry       &1052     & 854     \\
+Corn         & 2690    & 1162    \\
+Grape        & 3640    & 423     \\
+Orange       & 5507    & 0       \\
+Peach        & 360     & 2291    \\
+Bell Pepper  & 997     & 1478    \\
+Potato       & 2000    & 152     \\
+Raspberry    & 0       & 371     \\
+Soybean      & 0       & 5090    \\
+Squash       & 1835    & 0       \\
+Strawberry   & 1109    & 456     \\
+Tomato       & 16570   & 1592    \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Dataset Statistics}
+The PlantVillage dataset exhibits a significant degree of class imbalance, with certain crop-disease categories being heavily overrepresented while others contain relatively few samples. Such imbalance can lead to biased model training, where the network becomes disproportionately optimized for the majority classes, resulting in poor generalization for minority categories. To mitigate this issue, several strategies are commonly employed, including oversampling the minority class, undersampling the majority class, applying class-weighted sampling, or using advanced data augmentation techniques. Additionally, relying solely on accuracy as a performance metric can be misleading under such circumstances; therefore, metrics like precision, recall, and F1-score are used to provide a more balanced evaluation of model performance.
+
+In this study, data augmentation was adopted as the primary approach to alleviate class imbalance. Various augmentation techniques—such as rotation, flipping, illumination adjustment, and scaling—were applied to artificially increase the number of samples in minority classes. For the majority classes, augmentation was performed selectively, with the augmented images replacing existing samples to prevent further expansion of the dominant categories. Despite these measures, residual imbalance may still persist. To further address this, batch-wise balanced training was implemented using TensorFlow’s data pipeline, ensuring that each batch presented to the model contains an approximately equal representation of all classes. This strategy promotes fairer learning and enhances the robustness of the trained models across all plant disease categories.
+
+
+
+% \begin{table}[ht]
+% \centering
+% \caption{Augmentation images added per (minority) class — target size = 2000 images per class}
+% \label{tab:augmentation-counts}
+% \begin{tabular}{lrr}
+% 	oprule
+% Class & Original count & Augmented images added \\
+% \midrule
+% Apple & 1527 & 473 \\
+% Cherry & 1052 & 948 \\
+% Corn & 1162 & 838 \\
+% Peach & 360 & 1640 \\
+% Bell Pepper & 1478 & 522 \\
+% Potato & 152 & 1848 \\
+% Strawberry & 456 & 1544 \\
+% Blueberry & 1502 & 498 \\
+% Grape & 423 & 1577 \\
+% Raspberry & 371 & 1629 \\
+% Soybean & 5090 & 0 \\
+% Squash & 0 & 2000 \\
+% Tomato & 1592 & 408 \\
+% Orange & 0 & 2000 \\
+% \bottomrule
+% \end{tabular}
+% \end{table}
+
+% Note: The numbers above follow the stated target scheme and are examples; please update them if you used a different target or generation policy.
+
+\subsection{Data Augmentation}
+
+Data augmentation increases the effective size and diversity of the training set by applying label-preserving transformations. For minority classes this helps the model see more varied examples of disease symptoms, reducing the risk that the classifier will ignore rare categories. For majority classes we perform selective augmentation and sometimes replace original images with augmented variants for two reasons:
+
+First, prevent overfitting to trivial background cues: PlantVillage images were collected in controlled conditions with uniform backgrounds. If the model memorizes background or camera-specific artifacts present in the majority class, it may not generalize to field images. Replacing some majority-class originals with augmented variants (cropped, color-jittered, or slightly rotated) encourages the model to learn disease-relevant features instead of spurious patterns.
+
+Second, Maintain class balance in batches while preserving dataset size: Instead of only increasing the dataset by duplicating/augmenting majority classes (which worsens imbalance), we use augmentation to create alternative views and then sample batches that are balanced across the two binary labels (healthy vs unhealthy). This preserves the overall dataset scale while providing more diverse training signals.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\linewidth]{sec/Images/augumentation_example.png}
+    \caption{Example of Data-Augmentation}
+    \label{fig:Aug}
+\end{figure}
+The augmentation pipeline used to produce the class balance is described in the Methodology section.
+
+
+
+
+
+

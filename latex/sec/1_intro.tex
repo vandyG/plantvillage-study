@@ -1,0 +1,18 @@
+\section{Introduction}
+\label{sec:intro}
+
+
+Plant diseases pose a significant threat to global food security, leading to considerable yield losses and reduced crop quality. Traditional methods of disease diagnosis rely on visual inspection by experts, which is both time-consuming and error-prone, especially in resource-limited agricultural regions. Recent advances in computer vision and deep learning have provided promising alternatives by enabling automated, accurate, and scalable disease detection systems. Among these, convolutional neural networks (CNNs) and their variants have emerged as the dominant approach for extracting discriminative features from plant leaf images.
+
+The \textbf{PlantVillage} dataset \cite{priyadarshini2025systematic}, a publicly available benchmark comprising a wide range of plant species and disease classes, has become the standard testbed for evaluating deep learning models in this domain. Leveraging pretrained models through transfer learning has further accelerated progress, allowing researchers to adapt architectures originally developed for large-scale image recognition tasks (e.g., ImageNet) to agricultural applications with limited labeled data.
+
+This paper presents a comprehensive review of state-of-the-art pretrained models that have been applied to plant disease detection using the PlantVillage dataset. The models examined include \textbf{MobileNet, ResNet, SqueezeNet, VGG, AlexNet, GoogleNet, CaffeNet, RCNN\_ILSVRC13, DenseNet-121, Inception V1, Inception V2, ShuffleNet V1, ShuffleNet V2, ZFNet-512, and EfficientNet-Lite4}. These architectures represent diverse design philosophies, ranging from lightweight networks optimized for mobile deployment (e.g., MobileNet, ShuffleNet) to deeper and more complex models targeting higher accuracy (e.g., DenseNet, EfficientNet).
+
+In this study we do not perform multi-class classification across the original PlantVillage labels. Instead, we recast the task as a binary classification problem ("healthy" vs "unhealthy") by mapping all disease-specific labels to a single "unhealthy" class by changing the labels if each and every images in the dataset. This relabeling simplifies the prediction target but increases class imbalance (many crops have far more diseased or healthy images), which we address through targeted data-augmentation and careful batch sampling during training. We discuss these choices and their impact on evaluation in the Dataset and Implementation sections below.
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\linewidth]{sec/Images/healthy_vs_unhealthy.png}
+    \caption{Distribution of healthy vs. diseased }
+    \label{fig:healthy-unhealthy}
+\end{figure}
+To address the challenge of accurate and efficient plant disease detection, this paper adopts a comparative evaluation of multiple pretrained deep learning models on the PlantVillage dataset. Instead of developing a new architecture from scratch, \textbf{transfer learning} is employed to leverage the feature extraction capabilities of the aforementioned models. Each model is fine-tuned and tested under the same experimental conditions, allowing for a fair assessment of accuracy, computational efficiency, and deployment feasibility. By systematically analyzing their performance, the paper identifies which architectures are most suitable for practical agricultural applications, thereby providing a clear pathway for selecting models that balance precision and resource constraints in real-world plant disease detection systems.

@@ -150,9 +150,6 @@ def augment_healthy(image, label):
     return image_aug, label
 
 
-# Apply augmentation to only a small fraction of diseased images (10%)
-diseased_aug_prob = 0.1  # 10%
-
 def augment_diseased_with_replacement(image, label):
     image_f = tf.image.convert_image_dtype(image, tf.float32)
 
@@ -171,8 +168,7 @@ def augment_diseased_with_replacement(image, label):
         return image
 
     choice = tf.random.uniform([], 0.0, 1.0)
-    # augment only when random value < diseased_aug_prob (≈10%); otherwise keep original
-    return tf.cond(tf.less(choice, diseased_aug_prob), augmented, original), label
+    return tf.cond(choice > 0.5, augmented, original), label
 
 
 healthy_multiplier = 0

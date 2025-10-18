@@ -1,0 +1,108 @@
+% \section{Implementation}
+% this section will talk about how we trained our models 
+
+% \subsection{Preprocessing}
+% something about data augmentation 
+
+% \subsection{Training}
+% something about VGG that we did some result 
+
+
+% \subsection{placeholder for table}
+
+% compare both models on training metrics
+
+% \subsection{Evaluation}
+% something about VGG that we did some result 
+
+
+% \subsection{placeholder for table}
+
+% compare both models on acc and epochs it took to train 
+
+
+
+
+% \subsection{Hyperparameters}
+% Both VGG16 and ResNet models were trained using transfer learning with fine-tuning of the upper convolutional layers and full retraining of the fully connected layers. We used the Adam optimizer with a learning rate scheduler for efficient convergence. VGG16 demonstrated faster initial convergence, while ResNet maintained better generalization on unseen validation data. The models were trained for multiple epochs until the validation loss plateaued.
+% \begin{table}[ht]
+% \centering
+% \caption{Crop disease status}
+% \label{tab:crop-disease-status}
+% \begin{tabular}{lc}
+% \toprule
+% Hyperparameter & Parameter Value  \\
+
+% \midrule
+% Optimizer & --- \\
+% Loss & ---  \\
+% Learning Rate & ---  \\
+% Batch Size & ---  \\
+% Epochs & ---  \\
+% Activation Function & ---  \\
+
+% \bottomrule
+% \end{tabular}
+% \end{table}
+
+
+
+% \begin{table}[ht]
+% \centering
+% \caption{Crop disease status}
+% \label{tab:crop-disease-status}
+% \begin{tabular}{lccc}
+% \toprule
+% Model & Training Accuracy & Validation Loss & Time per Epoch \\
+
+% \midrule
+% VGG16 & --- & --- & ---\\
+% ResNet & --- & --- & --- \\
+
+% \bottomrule
+% \end{tabular}
+% \end{table}
+
+
+\section{Methodology for Comparative Evaluation}
+
+Deep learning architectures used for classification are often pretrained on large-scale datasets such as ImageNet, which contain millions of labeled images across diverse categories. Leveraging these pretrained models provides a strong initialization for feature extraction, thereby reducing the need for extensive training from scratch\cite{gupta2022deep}. This approach not only saves computational resources but also accelerates convergence during fine-tuning. In this study, transfer learning is employed to adapt these pretrained convolutional backbones for the classification of plant leaf health conditions.
+
+During the fine-tuning process, the early layers of the network responsible for learning general low-level features such as edges, textures, and color gradients are typically frozen to preserve their pretrained weights. The final classification layers, however, are unfrozen and retrained using the PlantVillage dataset to learn domain-specific patterns related to diseased and healthy leaves. This selective retraining ensures that the network retains its general visual understanding while adapting effectively to the specific task of plant disease recognition. Fine-tuning was performed for a limited number of epochs to prevent overfitting, given the relatively smaller dataset size compared to ImageNet.
+
+\subsection{Data Augmentation Pipeline}
+We used the PlantVillage dataset (loaded via TensorFlow Datasets) and converted the original multi-class labels of the form ``PlantType\_\_\_DiseaseName'' into a binary target by assigning $0 = \text{healthy}$ and $1 = \text{diseased}$ (determined by testing whether the suffix after ``\_\_\_'' equals ``healthy''). 
+
+To mitigate class imbalance we applied a class‑specific augmentation and replication scheme implemented in a tf.data pipeline: labels are mapped to binary via a static lookup array and all image augmentations are performed on float32 images in the $\{0,1\}$ range and converted back to uint8 for downstream use. For the healthy class we applied aggressive stochastic augmentations: random horizontal and vertical flips, a random $90^\circ$ rotation $(k \in {0,1,2,3})$, random saturation in $[0.8,1.25]$, random hue offset up to $\pm0.05$, random brightness delta up to $\pm0.12$, and random contrast in $[0.8,1.25]$. For the diseased class we applied milder perturbations and a replacement policy: for each diseased sample, with probability 0.5 we replace the original with an augmented variant produced by random horizontal flip, random $90^\circ$ rotation, contrast in $[0.9,1.1]$, brightness $\pm0.08$ and hue $\pm0.03$; otherwise the original image is retained. To balance classes we computed H and D as the healthy and diseased training counts and set the healthy replication multiplier $m = \max(1, \ceil{(D/H)} - 1)\quad(\text{if }H>0)$, then concatenated the original healthy set with m independently-augmented passes of the healthy set to produce $\approx H·(m+1)$ healthy examples; augmented diseased samples were concatenated thereafter. 
+
+The combined training set is shuffled (buffer sizes used: 4096 for healthy-stage shuffling, 8192 for final shuffling), prefetched with tf.data.AUTOTUNE, and used for training. For reproducibility we logged TensorFlow and tfds versions, dataset split, and random seeds (tf.random.set\_seed plus numpy/python RNGs) and stored the exact augmentation hyperparameters (saturation, hue, brightness, contrast ranges and diseased replacement probability) alongside experiment metadata.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\linewidth]{sec/Images/healthy_vs_diseased_aug.png}
+    \caption{Distribution after augmentation}
+    \label{fig:dist_Aug}
+\end{figure}
+
+\subsection{Evaluation Metrics}
+
+To ensure a fair and comprehensive comparison across different pretrained architectures, several quantitative metrics were employed to evaluate model performance. The primary metric used was \textbf{accuracy}, defined as the ratio of correctly classified samples to the total number of samples. While accuracy provides a broad view of performance, it may not fully capture the nuances of class imbalance within the dataset.
+
+Therefore, additional performance metrics were calculated, including \textbf{precision}, \textbf{recall}, and the \textbf{F1-score}. Precision measures the proportion of correctly predicted positive samples out of all samples predicted as positive, whereas recall measures the proportion of correctly predicted positive samples relative to all actual positive samples. The F1-score, being the harmonic mean of precision and recall, offers a balanced assessment of a model’s ability to handle false positives and false negatives. These metrics collectively provide a more robust understanding of model behavior under different conditions\cite{oak2024comparative}.
+
+Furthermore, model performance was also analyzed using the \textbf{Receiver Operating Characteristic (ROC)} curve, which plots the True Positive Rate (TPR) against the False Positive Rate (FPR) at various classification thresholds. The \textbf{Area Under the Curve (AUC)} serves as a single scalar value summarizing the overall discriminative capability of the model—where a higher AUC indicates stronger classification performance. Such a multi-metric evaluation ensures that both overall accuracy and per-class discrimination are considered in determining the most effective pretrained model for plant disease detection.
+
+% \begin{table}[ht]
+% \centering
+% \caption{Model Comparison}
+% \label{tab:crop-disease-status}
+% \begin{tabular}{lccc}
+% \toprule
+% Model & Accuracy & Precision & F1-Score \\
+
+% \midrule
+% ModelName & --- & --- & --- \\
+
+% \bottomrule
+% \end{tabular}
+% \end{table}
