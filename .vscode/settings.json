@@ -1,3 +1,4 @@
 {
-    "websearch.preferredEngine": "bing"
+    "websearch.preferredEngine": "bing",
+    "latex-workshop.latex.outDir": "%WORKSPACE_FOLDER%/latex/build"
 }
