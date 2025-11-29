@@ -8,11 +8,23 @@ dependencies = [
     "marimo>=0.17.0",
     "matplotlib>=3.10.7",
     "pandas>=2.3.3",
+    "scikit-image>=0.25.2",
+    "scikit-learn>=1.7.2",
     "tensorflow-datasets>=4.9.9",
     "tensorflow[and-cuda]>=2.20.0",
+    "timm>=1.0.22",
+    "torch",
+    "torchvision",
 ]
 
 [dependency-groups]
 dev = [
     "ipykernel>=7.0.1",
 ]
+
+[tool.uv.sources]
+torch = { index = "pytorch" }
+
+[[tool.uv.index]]
+name = "pytorch"
+url = "https://download.pytorch.org/whl/cu130"
