@@ -3,7 +3,7 @@ __marimo__
 test_output
 models/
 logs/
-preprocessed/
+preprocessed_numpy/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
