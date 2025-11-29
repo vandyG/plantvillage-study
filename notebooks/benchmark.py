@@ -43,7 +43,7 @@ import matplotlib.pyplot as plt
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from torch.utils.data import Dataset, DataLoader, IterableDataset
+from torch.utils.data import DataLoader, IterableDataset
 from torchvision import transforms, models
 from sklearn.metrics import (
     accuracy_score,
@@ -89,6 +89,12 @@ class TrainingConfig:
     seed: int = 42
     # TensorFlow prefetch settings
     tf_prefetch_size: int = 2  # TensorFlow prefetch buffer size
+    # Model-specific batch sizes for memory optimization
+    model_batch_sizes: Dict[str, int] = None
+    # Gradient accumulation for large models
+    gradient_accumulation_steps: int = 1
+    # Mixed precision training
+    use_amp: bool = True  # Automatic Mixed Precision
 
 
 @dataclass
@@ -448,6 +454,21 @@ def create_xception(num_classes: int = 2, pretrained: bool = True) -> nn.Module:
     return model
 
 
+def create_convnext_base(num_classes: int = 2, pretrained: bool = True) -> nn.Module:
+    """Create ConvNeXt Base with transfer learning."""
+    model = models.convnext_base(weights=models.ConvNeXt_Base_Weights.IMAGENET1K_V1 if pretrained else None)
+    
+    # Freeze feature extraction layers
+    for param in model.features.parameters():
+        param.requires_grad = False
+    
+    # Replace final classifier layer
+    num_features = model.classifier[2].in_features
+    model.classifier[2] = nn.Linear(num_features, num_classes)
+    
+    return model
+
+
 # Model registry for easy addition of new models
 MODEL_REGISTRY: Dict[str, Callable[[int, bool], nn.Module]] = {
     "AlexNet": create_alexnet,
@@ -455,6 +476,7 @@ MODEL_REGISTRY: Dict[str, Callable[[int, bool], nn.Module]] = {
     "VGG16": create_vgg16,
     "InceptionV4": create_inception_v4,
     "Xception": create_xception,
+    "ConvNeXt_Base": create_convnext_base,
 }
 
 
@@ -493,26 +515,66 @@ def train_epoch(
     criterion: nn.Module,
     optimizer: optim.Optimizer,
     device: str,
+    use_amp: bool = True,
+    accumulation_steps: int = 1,
 ) -> Tuple[float, float]:
-    """Train for one epoch."""
+    """Train for one epoch with gradient accumulation and mixed precision."""
     model.train()
     running_loss = 0.0
     correct = 0
     total = 0
     
-    for images, labels in train_loader:
+    # Mixed precision scaler
+    scaler = torch.amp.GradScaler("cuda", enabled=(use_amp and device == "cuda"))
+    
+    optimizer.zero_grad()
+    
+    for batch_idx, (images, labels) in enumerate(train_loader):
         images, labels = images.to(device), labels.to(device)
         
-        optimizer.zero_grad()
-        outputs = model(images)
-        loss = criterion(outputs, labels)
-        loss.backward()
-        optimizer.step()
+        # Mixed precision forward pass
+        if use_amp and device == "cuda":
+            with torch.amp.autocast('cuda'):
+                outputs = model(images)
+                loss = criterion(outputs, labels)
+                loss = loss / accumulation_steps  # Normalize loss for accumulation
+        else:
+            outputs = model(images)
+            loss = criterion(outputs, labels)
+            loss = loss / accumulation_steps
         
-        running_loss += loss.item() * images.size(0)
+        # Backward pass
+        if scaler is not None:
+            scaler.scale(loss).backward()
+        else:
+            loss.backward()
+        
+        # Gradient accumulation
+        if (batch_idx + 1) % accumulation_steps == 0:
+            if scaler is not None:
+                scaler.step(optimizer)
+                scaler.update()
+            else:
+                optimizer.step()
+            optimizer.zero_grad()
+        
+        running_loss += loss.item() * images.size(0) * accumulation_steps
         _, predicted = torch.max(outputs.data, 1)
         total += labels.size(0)
         correct += (predicted == labels).sum().item()
+        
+        # Clear cache periodically for large models
+        if device == "cuda" and batch_idx % 10 == 0:
+            torch.cuda.empty_cache()
+    
+    # Handle any remaining gradients
+    if (batch_idx + 1) % accumulation_steps != 0:
+        if scaler is not None:
+            scaler.step(optimizer)
+            scaler.update()
+        else:
+            optimizer.step()
+        optimizer.zero_grad()
     
     epoch_loss = running_loss / total
     epoch_acc = correct / total
@@ -525,23 +587,35 @@ def validate(
     val_loader: DataLoader,
     criterion: nn.Module,
     device: str,
+    use_amp: bool = True,
 ) -> Tuple[float, float]:
-    """Validate the model."""
+    """Validate the model with mixed precision."""
     model.eval()
     running_loss = 0.0
     correct = 0
     total = 0
     
     with torch.no_grad():
-        for images, labels in val_loader:
+        for batch_idx, (images, labels) in enumerate(val_loader):
             images, labels = images.to(device), labels.to(device)
-            outputs = model(images)
-            loss = criterion(outputs, labels)
+            
+            # Mixed precision forward pass
+            if use_amp and device == "cuda":
+                with torch.amp.autocast('cuda'):
+                    outputs = model(images)
+                    loss = criterion(outputs, labels)
+            else:
+                outputs = model(images)
+                loss = criterion(outputs, labels)
             
             running_loss += loss.item() * images.size(0)
             _, predicted = torch.max(outputs.data, 1)
             total += labels.size(0)
             correct += (predicted == labels).sum().item()
+            
+            # Clear cache periodically
+            if device == "cuda" and batch_idx % 10 == 0:
+                torch.cuda.empty_cache()
     
     epoch_loss = running_loss / total
     epoch_acc = correct / total
@@ -557,7 +631,7 @@ def train_model(
     model_name: str,
 ) -> Tuple[nn.Module, Dict[str, List[float]], int]:
     """
-    Train a model with early stopping.
+    Train a model with early stopping, gradient accumulation, and mixed precision.
     
     Returns:
         Tuple of (trained_model, history_dict, best_epoch)
@@ -568,6 +642,13 @@ def train_model(
     
     device = config.device
     model = model.to(device)
+    
+    # Memory optimization: enable gradient checkpointing for large models (when supported)
+    if hasattr(model, 'set_grad_checkpointing'):
+        try:
+            model.set_grad_checkpointing(enable=True)
+        except AssertionError:
+            print(f"Warning: Gradient checkpointing not supported for {model_name}. Skipping.")
     
     criterion = nn.CrossEntropyLoss()
     
@@ -595,13 +676,28 @@ def train_model(
     
     best_model_state = None
     
+    print("Memory optimizations enabled:")
+    print(f"  - Mixed Precision (AMP): {config.use_amp and device == 'cuda'}")
+    print(f"  - Gradient Accumulation Steps: {config.gradient_accumulation_steps}")
+    if device == "cuda":
+        print(f"  - GPU Memory: {torch.cuda.get_device_properties(0).total_memory / 1e9:.2f} GB")
+    
     for epoch in range(config.num_epochs):
         start_time = time.time()
         
+        # Clear cache before epoch
+        if device == "cuda":
+            torch.cuda.empty_cache()
+        
         train_loss, train_acc = train_epoch(
-            model, train_loader, criterion, optimizer, device
+            model, train_loader, criterion, optimizer, device,
+            use_amp=config.use_amp,
+            accumulation_steps=config.gradient_accumulation_steps,
         )
-        val_loss, val_acc = validate(model, val_loader, criterion, device)
+        val_loss, val_acc = validate(
+            model, val_loader, criterion, device,
+            use_amp=config.use_amp,
+        )
         
         history['train_loss'].append(train_loss)
         history['train_acc'].append(train_acc)
@@ -610,9 +706,18 @@ def train_model(
         
         epoch_time = time.time() - start_time
         
-        print(f"Epoch [{epoch+1}/{config.num_epochs}] ({epoch_time:.2f}s) - "
-              f"Train Loss: {train_loss:.4f}, Train Acc: {train_acc:.4f} | "
-              f"Val Loss: {val_loss:.4f}, Val Acc: {val_acc:.4f}")
+        # Memory usage logging
+        if device == "cuda":
+            mem_allocated = torch.cuda.memory_allocated() / 1e9
+            mem_reserved = torch.cuda.memory_reserved() / 1e9
+            print(f"Epoch [{epoch+1}/{config.num_epochs}] ({epoch_time:.2f}s) - "
+                  f"Train Loss: {train_loss:.4f}, Train Acc: {train_acc:.4f} | "
+                  f"Val Loss: {val_loss:.4f}, Val Acc: {val_acc:.4f} | "
+                  f"GPU Mem: {mem_allocated:.2f}/{mem_reserved:.2f} GB")
+        else:
+            print(f"Epoch [{epoch+1}/{config.num_epochs}] ({epoch_time:.2f}s) - "
+                  f"Train Loss: {train_loss:.4f}, Train Acc: {train_acc:.4f} | "
+                  f"Val Loss: {val_loss:.4f}, Val Acc: {val_acc:.4f}")
         
         # Learning rate scheduling
         scheduler.step(val_loss)
@@ -631,6 +736,10 @@ def train_model(
     if best_model_state is not None:
         model.load_state_dict(best_model_state)
     
+    # Final cleanup
+    if device == "cuda":
+        torch.cuda.empty_cache()
+    
     return model, history, early_stopping.best_epoch
 
 
@@ -638,9 +747,10 @@ def evaluate_model(
     model: nn.Module,
     test_loader: DataLoader,
     device: str,
+    use_amp: bool = True,
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
-    Evaluate model on test set.
+    Evaluate model on test set with mixed precision.
     
     Returns:
         Tuple of (y_true, y_pred, y_probs)
@@ -651,15 +761,34 @@ def evaluate_model(
     y_probs = []
     
     with torch.no_grad():
-        for images, labels in test_loader:
+        for batch_idx, (images, labels) in enumerate(test_loader):
             images = images.to(device)
-            outputs = model(images)
-            probs = torch.softmax(outputs, dim=1)
+            
+            # Mixed precision inference
+            if use_amp and device == "cuda":
+                with torch.amp.autocast('cuda'):
+                    outputs = model(images)
+                    probs = torch.softmax(outputs, dim=1)
+            else:
+                outputs = model(images)
+                probs = torch.softmax(outputs, dim=1)
+            
             _, predicted = torch.max(outputs, 1)
             
             y_true.extend(labels.cpu().numpy())
             y_pred.extend(predicted.cpu().numpy())
-            y_probs.extend(probs[:, 1].cpu().numpy())  # Probability of positive class
+            
+            # Get probabilities and validate for NaN/inf
+            probs_pos = probs[:, 1].cpu().numpy()
+            # Check for NaN/inf and replace if needed
+            if np.any(np.isnan(probs_pos)) or np.any(np.isinf(probs_pos)):
+                print(f"Warning: Invalid probabilities in batch {batch_idx}, cleaning...")
+                probs_pos = np.nan_to_num(probs_pos, nan=0.5, posinf=1.0, neginf=0.0)
+            y_probs.extend(probs_pos)
+            
+            # Clear cache periodically
+            if device == "cuda" and batch_idx % 10 == 0:
+                torch.cuda.empty_cache()
     
     return np.array(y_true), np.array(y_pred), np.array(y_probs)
 
@@ -671,6 +800,13 @@ def compute_metrics(
 ) -> Dict[str, Any]:
     """Compute comprehensive evaluation metrics including ROC curve data."""
     from sklearn.metrics import roc_curve
+    
+    # Validate and clean y_probs (handle NaN/inf values)
+    if np.any(np.isnan(y_probs)) or np.any(np.isinf(y_probs)):
+        print("Warning: NaN or inf values detected in probabilities. Cleaning...")
+        # Replace NaN with 0.5 (uncertain) and clip inf values
+        y_probs = np.nan_to_num(y_probs, nan=0.5, posinf=1.0, neginf=0.0)
+        y_probs = np.clip(y_probs, 0.0, 1.0)
     
     # Compute ROC curve
     fpr, tpr, thresholds = roc_curve(y_true, y_probs)
@@ -698,6 +834,8 @@ def benchmark_model(
     val_loader: DataLoader,
     test_loader: DataLoader,
     config: TrainingConfig,
+    save_model: bool = True,
+    output_dir: str = "data/output",
 ) -> ModelMetrics:
     """
     Benchmark a single model.
@@ -708,6 +846,8 @@ def benchmark_model(
         val_loader: Validation data loader
         test_loader: Test data loader
         config: Training configuration
+        save_model: Whether to save the trained model
+        output_dir: Directory to save models
     
     Returns:
         ModelMetrics object with all metrics
@@ -715,6 +855,10 @@ def benchmark_model(
     print(f"\n{'#'*70}")
     print(f"# Benchmarking {model_name}")
     print(f"{'#'*70}")
+    
+    # Clear GPU cache before starting
+    if config.device == "cuda":
+        torch.cuda.empty_cache()
     
     # Create model
     model_fn = MODEL_REGISTRY[model_name]
@@ -731,7 +875,7 @@ def benchmark_model(
     print(f"\nEvaluating {model_name} on test set...")
     inference_start = time.time()
     y_true, y_pred, y_probs = evaluate_model(
-        trained_model, test_loader, config.device
+        trained_model, test_loader, config.device, use_amp=config.use_amp
     )
     inference_time = time.time() - inference_start
     
@@ -746,6 +890,30 @@ def benchmark_model(
     print(f"  AUC-ROC:   {metrics['auc_roc']:.4f}")
     print(f"  Training Time:   {train_time:.2f}s")
     print(f"  Inference Time:  {inference_time:.2f}s")
+    
+    # Save model if requested
+    if save_model:
+        os.makedirs(output_dir, exist_ok=True)
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        model_path = os.path.join(output_dir, f"{model_name}_{timestamp}.pth")
+        
+        # Save model state dict and training info
+        torch.save({
+            'model_state_dict': trained_model.state_dict(),
+            'model_name': model_name,
+            'config': asdict(config),
+            'metrics': metrics,
+            'history': history,
+            'best_epoch': best_epoch,
+            'train_time': train_time,
+            'inference_time': inference_time,
+        }, model_path)
+        print(f"  Model saved to: {model_path}")
+    
+    # Clear memory after model
+    del trained_model
+    if config.device == "cuda":
+        torch.cuda.empty_cache()
     
     return ModelMetrics(
         model_name=model_name,
@@ -791,7 +959,7 @@ def run_benchmark(
         torch.cuda.manual_seed(config.seed)
     
     print(f"\n{'='*70}")
-    print(f"BENCHMARK CONFIGURATION")
+    print("BENCHMARK CONFIGURATION")
     print(f"{'='*70}")
     print(f"Device: {config.device}")
     print(f"Batch Size: {config.batch_size}")
@@ -972,7 +1140,7 @@ def plot_roc_curves(results: List[ModelMetrics], save_path: str = None):
     plt.show()
 
 
-def save_results(results: List[ModelMetrics], output_dir: str = "../data/output"):
+def save_results(results: List[ModelMetrics], output_dir: str = "data/output"):
     """Save benchmark results to JSON and create visualizations."""
     os.makedirs(output_dir, exist_ok=True)
     
@@ -1021,36 +1189,81 @@ def save_results(results: List[ModelMetrics], output_dir: str = "../data/output"
 
 def main():
     """Main benchmarking pipeline."""
+    # Model-specific batch sizes (optimized for memory)
+    model_batch_sizes = {
+        "AlexNet": 64,
+        "ResNet50": 32,
+        "VGG16": 32,
+        "InceptionV4": 16,  # Reduced for large model
+        "Xception": 16,     # Reduced for large model
+        "ConvNeXt_Base": 32,  # Similar to ResNet50
+    }
+    
     # Configuration
     config = TrainingConfig(
-        batch_size=32,
-        num_epochs=10,
+        batch_size=32,  # Default, will be overridden per model
+        num_epochs=5,
         learning_rate=0.001,
         weight_decay=1e-4,
-        early_stopping_patience=3,
+        early_stopping_patience=2,
         num_workers=0,  # Must be 0 for IterableDataset
         tf_prefetch_size=2,  # TensorFlow prefetch buffer
+        model_batch_sizes=model_batch_sizes,
+        gradient_accumulation_steps=2,  # Accumulate gradients over 2 steps for large models
+        use_amp=True,  # Enable mixed precision training
     )
     
-    # For systems with limited memory, use:
-    # config.batch_size = 16  # Smaller batches
-    # config.tf_prefetch_size = 1  # Smaller prefetch buffer
-    
-    # Note: No disk space required! Streaming mode uses zero disk cache
+    # For systems with VERY limited memory (< 8GB GPU), use:
+    # config.batch_size = 8
+    # config.gradient_accumulation_steps = 4
+    # model_batch_sizes = {"AlexNet": 16, "ResNet50": 8, "VGG16": 8, "InceptionV4": 4, "Xception": 4}
     
     # Models to benchmark
     # models_to_test = ["AlexNet", "ResNet50", "VGG16", "InceptionV4", "Xception"]
-    models_to_test = ["InceptionV4", "Xception"]
+    # models_to_test = ["InceptionV4", "Xception"]
+    models_to_test = ["ConvNeXt_Base"]
     
-    # Run benchmark
-    # For faster testing, you can use max_samples parameter:
-    # results = run_benchmark(models_to_test, config, max_samples=1000)
-    results = run_benchmark(models_to_test, config)
+    # Run benchmark with model-specific batch sizes
+    results = []
+    for model_name in models_to_test:
+        # Use model-specific batch size if available
+        if config.model_batch_sizes and model_name in config.model_batch_sizes:
+            original_batch_size = config.batch_size
+            config.batch_size = config.model_batch_sizes[model_name]
+            print(f"\n{'='*70}")
+            print(f"Using batch size {config.batch_size} for {model_name}")
+            print(f"{'='*70}")
+        
+        # Load data with current batch size
+        train_loader, val_loader, test_loader = load_plant_village_data(config)
+        
+        # Benchmark this model
+        try:
+            metrics = benchmark_model(
+                model_name, train_loader, val_loader, test_loader, config,
+                save_model=True, output_dir="data/output"
+            )
+            results.append(metrics)
+        except RuntimeError as e:
+            if "out of memory" in str(e):
+                print(f"\n❌ OOM Error for {model_name}. Try reducing batch_size or enabling gradient accumulation.")
+                print(f"   Current batch_size: {config.batch_size}")
+                print(f"   Suggestion: batch_size={config.batch_size // 2}, gradient_accumulation_steps={config.gradient_accumulation_steps * 2}")
+                if torch.cuda.is_available():
+                    torch.cuda.empty_cache()
+            else:
+                raise e
+        
+        # Restore original batch size
+        if config.model_batch_sizes and model_name in config.model_batch_sizes:
+            config.batch_size = original_batch_size
     
     # Save and visualize results
-    save_results(results)
-    
-    print("\n✓ Benchmarking complete!")
+    if results:
+        save_results(results)
+        print("\n✓ Benchmarking complete!")
+    else:
+        print("\n❌ No models completed successfully!")
 
 
 if __name__ == "__main__":
