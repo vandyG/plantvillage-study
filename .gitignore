@@ -4,6 +4,7 @@ test_output
 models/
 logs/
 preprocessed_numpy/
+data/plantdoc/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
