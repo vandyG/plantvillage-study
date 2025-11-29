@@ -181,3 +181,4 @@ cython_debug/
 .marimo
 test/
 .direnv/
+data/plant_doc/
