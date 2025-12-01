@@ -1,0 +1,138 @@
+\section{Results}
+\label{sec:results}
+
+This section presents a comprehensive analysis of the experimental results obtained from evaluating twelve pretrained deep learning models on the PlantVillage dataset for binary plant disease classification. We further assess generalization capability through cross-dataset evaluation on the PlantDoc dataset. The models are organized into three architectural categories: Classical Models (AlexNet, VGG16), Lightweight Models (MobileNet\_v2, ShuffleNet\_v2, SqueezeNet1\_0, MnasNet1\_0, EfficientNet-Lite4), and Modern Architectures (Xception, InceptionV4, ConvNeXt\_Base, ResNet50, DenseNet121).
+
+\subsection{PlantVillage Dataset Evaluation}
+
+Table~\ref{tab:plantvillage-results} summarizes the performance metrics for all evaluated models on the PlantVillage test set. The results reveal several important findings regarding the effectiveness of different architectural approaches for plant disease detection.
+
+\subsubsection{Classical Models Analysis}
+
+The classical architectures demonstrated surprisingly strong performance despite their relatively simpler design. VGG16 achieved the highest AUC-ROC score of 0.9990 among all models, with an accuracy of 97.05\% and F1-score of 0.9801. The model exhibited excellent recall (99.85\%), indicating near-perfect sensitivity in detecting diseased samples. AlexNet, despite being the earliest architecture evaluated, achieved 96.53\% accuracy with remarkable training efficiency (538.35 seconds), making it highly suitable for resource-constrained deployment scenarios.
+
+The confusion matrices in Figure~\ref{fig:cm-classical} illustrate that both classical models maintain balanced performance across both classes. VGG16 produced only 9 false positives and 231 false negatives out of approximately 8,000 test samples, demonstrating its robust discriminative capability. The strong performance of these classical architectures suggests that the depth and complexity of modern networks may not always translate to proportional gains in plant disease detection tasks.
+
+\subsubsection{Lightweight Models Analysis}
+
+Among the lightweight architectures, EfficientNet-Lite4 emerged as the top performer overall, achieving the highest accuracy (98.20\%) and F1-score (0.9875) across all evaluated models. This result validates the efficacy of compound scaling strategies employed in the EfficientNet family. MobileNet\_v2 also demonstrated competitive performance with 96.17\% accuracy while maintaining computational efficiency suitable for mobile deployment.
+
+However, lightweight models exhibited greater variance in performance. SqueezeNet1\_0 and MnasNet1\_0 showed lower accuracy (82.01\% and 84.22\% respectively), though both maintained high AUC-ROC scores ($>$0.97), indicating good ranking capability despite suboptimal classification thresholds. The confusion matrix analysis reveals that these models tend toward high recall at the expense of precision, suggesting a bias toward predicting the diseased class.
+
+\subsubsection{Modern Architectures Analysis}
+
+Modern architectures presented mixed results. ResNet50 and DenseNet121 achieved strong performance (97.09\% and 96.76\% accuracy respectively), benefiting from their sophisticated connectivity patterns that facilitate gradient flow and feature reuse. Both models demonstrated excellent precision ($>$0.99), indicating low false positive rates critical for practical deployment.
+
+Interestingly, ConvNeXt\_Base, despite being the most recently developed architecture, achieved only 91.03\% accuracy. Analysis of its confusion matrix reveals a tendency toward over-predicting the diseased class (99.93\% recall but only 89.07\% precision), resulting in 727 false positives. This behavior may be attributed to the model's complexity leading to overfitting on certain disease-indicative features. Similarly, Xception and InceptionV4 showed lower accuracy (87.66\% and 88.09\%) compared to classical alternatives, with notably lower precision values.
+
+\subsection{Training Dynamics Analysis}
+
+Figure~\ref{fig:train-loss} presents the training and validation loss curves across all model clusters. Several observations emerge from this analysis:
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\linewidth]{sec/Images/train_val_loss_by_cluster.png}
+    \caption{Training vs. Validation Loss Curves by Model Cluster}
+    \label{fig:train-loss}
+\end{figure}
+
+\textbf{Classical Models:} Both AlexNet and VGG16 demonstrated smooth convergence with training and validation losses decreasing consistently across epochs. The gap between training and validation loss remained minimal, suggesting good generalization without significant overfitting.
+
+\textbf{Lightweight Models:} These architectures showed more varied convergence patterns. EfficientNet-Lite4 exhibited rapid initial convergence, while SqueezeNet1\_0 and MnasNet1\_0 showed higher validation losses that plateau at suboptimal values, explaining their lower test accuracy.
+
+\textbf{Modern Architectures:} ResNet50 and DenseNet121 displayed stable learning dynamics with low final loss values. However, InceptionV4 showed elevated validation loss despite low training loss, indicating potential overfitting on the PlantVillage dataset.
+
+\subsection{ROC Curve Analysis}
+
+The ROC curves in Figure~\ref{fig:roc-plantvillage} provide insight into the classification capability across different operating thresholds. All models achieved AUC-ROC values exceeding 0.93, indicating strong discriminative ability for the binary classification task.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\linewidth]{sec/Images/roc_curves_combined.png}
+    \caption{ROC Curves Analysis - PlantVillage Dataset}
+    \label{fig:roc-plantvillage}
+\end{figure}
+
+VGG16 and AlexNet demonstrated near-perfect ROC curves that closely hug the upper-left corner, reflecting their exceptional ability to distinguish healthy from diseased samples across all threshold values. Among lightweight models, EfficientNet-Lite4 showed the steepest initial rise, achieving high true positive rates at very low false positive rates.
+
+\subsection{Cross-Dataset Generalization: PlantDoc Evaluation}
+Table~\ref{tab:plantdoc-results} presents the performance metrics when models trained on PlantVillage were evaluated on the PlantDoc dataset without fine-tuning.
+
+\subsubsection{Generalization Performance Analysis}
+
+\textbf{ConvNeXt emerged as the best generalizing model} with 83.90\% accuracy and the highest F1-score (0.8782) on PlantDoc. Notably, this represents a ranking reversal from PlantVillage results, where ConvNeXt ranked lower. This suggests that ConvNeXt's modern design captures more generalizable disease features that transfer across datasets.
+
+\textbf{Classical models demonstrated robust generalization.} AlexNet achieved 81.36\% accuracy on PlantDoc (compared to 96.53\% on PlantVillage), representing only a 15.2 percentage point drop. VGG16 showed similar robustness with 75.42\% accuracy. The simpler feature hierarchies learned by classical networks appear to transfer better to out-of-distribution samples.
+
+\textbf{Severe degradation in lightweight models.} MobileNet\_v2 dropped from 96.17\% to 44.49\% accuracy, while ShuffleNet\_v2 fell to 40.25\%. The confusion matrices reveal extreme prediction bias: ShuffleNet\_v2 achieved perfect precision (1.0) but only 3.42\% recall, indicating it classified nearly all samples as healthy. This behavior suggests these models overfit to PlantVillage-specific background and lighting patterns.
+
+\textbf{ResNet50's catastrophic failure} (32.63\% accuracy, below random baseline for some classes) is particularly notable given its strong PlantVillage performance. The AUC-ROC of 0.2811 (below 0.5) indicates inverted predictions, where the model's probability rankings are negatively correlated with true labels.
+
+\subsubsection{ROC Analysis on PlantDoc}
+
+ConvNeXt, SqueezeNet1\_0, and VGG16 maintained reasonable ROC curves with AUC values above 0.90, indicating preserved ranking ability despite lower classification accuracy. However, ResNet50's ROC curve falls below the diagonal random classifier line, confirming systematic prediction errors. Among lightweight models, only SqueezeNet1\_0 (AUC=0.909) maintained strong discriminative capability on PlantDoc.
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\linewidth]{sec/Images/plantdoc_roc_curves_combined.png}
+    \caption{ROC Curves Analysis - PlantDoc Cross-Dataset Evaluation}
+    \label{fig:roc-plantdoc}
+\end{figure}
+% \subsection{Confusion Matrix Analysis}
+
+% The confusion matrices (Figures~\ref{fig:cm-classical}, \ref{fig:cm-lightweight}, \ref{fig:cm-modern}) reveal distinct error patterns across model categories.
+
+% % \begin{figure}[H]
+% %     \centering
+% %     \includegraphics[width=\linewidth]{sec/Images/confusion_matrices_all_models.png}
+% %     \caption{Confusion Matrices for All Models on PlantVillage}
+% %     \label{fig:cm-all}
+% % \end{figure}
+
+% \begin{figure}[H]
+%     \centering
+%     \includegraphics[width=\linewidth]{sec/Images/confusion_matrices_classical_models.png}
+%     \caption{Confusion Matrices - Classical Models}
+%     \label{fig:cm-classical}
+% \end{figure}
+
+% \begin{figure}[H]
+%     \centering
+%     \includegraphics[width=\linewidth]{sec/Images/confusion_matrices_lightweight_models.png}
+%     \caption{Confusion Matrices - Lightweight Models}
+%     \label{fig:cm-lightweight}
+% \end{figure}
+
+% \begin{figure}[H]
+%     \centering
+%     \includegraphics[width=\linewidth]{sec/Images/confusion_matrices_modern_architecture.png}
+%     \caption{Confusion Matrices - Modern Architectures}
+%     \label{fig:cm-modern}
+% \end{figure}
+
+% On PlantVillage, models generally exhibit high true positive and true negative counts with minimal off-diagonal errors. VGG16 and EfficientNet-Lite4 show the most balanced confusion matrices with low counts in both false positive and false negative cells.
+
+% Modern architectures including Xception, InceptionV4, and ConvNeXt show elevated false positive counts (987, 940, and 727 respectively), indicating over-prediction of the diseased class. This pattern persists across thresholds and may reflect learned biases from the class-balanced augmentation strategy.
+
+\subsection{Computational Efficiency}
+
+Table~\ref{tab:computational} presents inference speed measurements, critical for real-world deployment scenarios.
+
+\begin{table}[ht]
+\centering
+\caption{Computational Efficiency Metrics}
+\label{tab:computational}
+\begin{tabular}{lcc}
+\toprule
+\textbf{Model} & \textbf{Inference Time (s)} & \textbf{Samples/Second} \\
+\midrule
+AlexNet & 12.56 & 651.4 \\
+Xception & 24.79 & 329.8 \\
+InceptionV4 & 34.78 & 235.1 \\
+VGG16 & 37.32 & 219.1 \\
+ConvNeXt\_Base & 79.89 & 102.4 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+AlexNet achieves the fastest inference speed (651.4 samples/second), making it highly suitable for real-time applications. VGG16, despite its strong accuracy, processes approximately 219 samples/second, which remains practical for batch processing scenarios. ConvNeXt\_Base, while achieving good generalization, requires significantly more computational resources with only 102.4 samples/second.
+

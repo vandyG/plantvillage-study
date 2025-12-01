@@ -17,33 +17,7 @@ The PlantVillage dataset exhibits a significant degree of class imbalance, with 
     \includegraphics[width=\linewidth]{sec/Images/example_images.png}
     \caption{Sample images from dataset.}
     \label{fig:example_images}
-\end{figure}
-
-\begin{table}[ht]
-\centering
-\caption{Crop disease status}
-\label{tab:crop-disease-status}
-\begin{tabular}{lcc}
-\toprule
-Crop Species & Diseased & Health \\
-\midrule
-Apple        &1527     & 1645    \\
-Blueberry    & 0       & 1502    \\
-Cherry       &1052     & 854     \\
-Corn         & 2690    & 1162    \\
-Grape        & 3640    & 423     \\
-Orange       & 5507    & 0       \\
-Peach        & 360     & 2291    \\
-Bell Pepper  & 997     & 1478    \\
-Potato       & 2000    & 152     \\
-Raspberry    & 0       & 371     \\
-Soybean      & 0       & 5090    \\
-Squash       & 1835    & 0       \\
-Strawberry   & 1109    & 456     \\
-Tomato       & 16570   & 1592    \\
-\bottomrule
-\end{tabular}
-\end{table}
+\end{figure}    
 
 In this study, data augmentation was adopted as the primary approach to alleviate class imbalance. Various augmentation techniques—such as rotation, flipping, illumination adjustment, and scaling—were applied to artificially increase the number of samples in minority classes. For the majority classes, augmentation was performed selectively, with the augmented images replacing existing samples to prevent further expansion of the dominant categories. Despite these measures, residual imbalance may still persist. To further address this, batch-wise balanced training was implemented using TensorFlow's data pipeline, ensuring that each batch presented to the model contains an approximately equal representation of all classes. This strategy promotes fairer learning and enhances the robustness of the trained models across all plant disease categories.
 

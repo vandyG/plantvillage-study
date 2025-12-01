@@ -3,7 +3,7 @@
 \documentclass[10pt,twocolumn,letterpaper]{article}
 
 %%%%%%%%% PAPER TYPE  - PLEASE UPDATE FOR FINAL VERSION
-\usepackage{cvpr}              % To produce the CAMERA-READY version
+\usepackage[pagenumbers]{cvpr}              % To produce the CAMERA-READY version (show page numbers)
 % \usepackage[review]{cvpr}      % To produce the REVIEW version
 % \usepackage[pagenumbers]{cvpr} % To force page numbers, e.g. for an arXiv version
 
@@ -45,23 +45,30 @@ University of Texas at Arlington\\
 
 \begin{document}
 \maketitle
-% \input{sec/0_abstract}    
+\pagenumbering{arabic} % ensure page numbers are displayed
+\input{sec/0_abstract}    
 \input{sec/1_intro}
 \input{sec/1_2_related_work.tex}
 \input{sec/2_formatting}
-\input{sec/3_method}
+% \input{sec/3_method}
 \input{sec/4_implementation}
 % \input{sec/3_appendix}
-\input{sec/5_model}
+\input{sec/5_results.tex}
 \input{sec/6_Conclusion}
+\clearpage
 {
     \small
+    \onecolumn
     \bibliographystyle{ieeenat_fullname}
     \bibliography{main}
     \nocite{*}
 }
-
+%
 % WARNING: do not forget to delete the supplementary pages from your submission 
 % \input{sec/X_suppl}
-
+%
+% Appendix at the very end
+\pagebreak
+\input{sec/3_appendix}
+%
 \end{document}

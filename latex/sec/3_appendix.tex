@@ -1,30 +1,76 @@
-\appendix
-\section{Appendix}
 \onecolumn
+\appendix
+\section{Tables}
 \begin{table}[ht]
 \centering
-\small
-\begin{tabular}{p{0.28\textwidth} p{0.22\textwidth} p{0.50\textwidth}}
-\hline
-\textbf{Model Class} & \textbf{Reference} & \textbf{Description} \\
-\hline
-\textbf{\href{validated/vision/classification/mobilenet}{MobileNet}} & \href{https://arxiv.org/abs/1801.04381}{Sandler et al.} & Light-weight deep neural network best suited for mobile and embedded vision applications. \newline Top-5 error from paper: $\sim$10\%. \\
-\textbf{\href{validated/vision/classification/resnet}{ResNet}} & \href{https://arxiv.org/abs/1512.03385}{He et al.} & A CNN model (up to 152 layers). Uses shortcut connections to achieve higher accuracy when classifying images. \newline Top-5 error from paper: $\sim$3.6\%. \\
-\textbf{\href{validated/vision/classification/squeezenet}{SqueezeNet}} & \href{https://arxiv.org/abs/1602.07360}{Iandola et al.} & A light-weight CNN model providing AlexNet-level accuracy with ~50x fewer parameters. \newline Top-5 error from paper: $\sim$20\%. \\
-\textbf{\href{validated/vision/classification/vgg}{VGG}} & \href{https://arxiv.org/abs/1409.1556}{Simonyan et al.} & Deep CNN model (up to 19 layers). Similar to AlexNet but uses multiple smaller kernel-sized filters for improved accuracy. \newline Top-5 error from paper: $\sim$8\%. \\
-\textbf{\href{validated/vision/classification/alexnet}{AlexNet}} & \href{https://papers.nips.cc/paper/4824-imagenet-classification-with-deep-convolutional-neural-networks.pdf}{Krizhevsky et al.} & A deep CNN (up to 8 layers) producing a 1000-dim output vector for ImageNet. \newline Top-5 error from paper: $\sim$15\%. \\
-\textbf{\href{validated/vision/classification/inception_and_googlenet/googlenet}{GoogleNet}} & \href{https://arxiv.org/pdf/1409.4842.pdf}{Szegedy et al.} & Deep CNN (up to 22 layers). Smaller and faster than VGG and more detailed than AlexNet. \newline Top-5 error from paper: $\sim$6.7\%. \\
-\textbf{\href{validated/vision/classification/caffenet}{CaffeNet}} & \href{https://ucb-icsi-vision-group.github.io/caffe-paper/caffe.pdf}{Krizhevsky et al.} & Deep CNN variation of AlexNet where max pooling precedes local response normalization to reduce compute and memory. \\
-\textbf{\href{validated/vision/classification/rcnn_ilsvrc13}{RCNN\_ILSVRC13}} & \href{https://arxiv.org/abs/1311.2524}{Girshick et al.} & Pure Caffe implementation of R-CNN for image classification; uses localized regions to classify and extract features. \\
-\textbf{\href{validated/vision/classification/densenet-121}{DenseNet-121}} & \href{https://arxiv.org/abs/1608.06993}{Huang et al.} & Every layer is connected to every other layer, improving gradient flow and feature diversity. \\
-\textbf{\href{validated/vision/classification/inception_and_googlenet/inception_v1}{Inception\_V1}} & \href{https://arxiv.org/abs/1409.4842}{Szegedy et al.} & Same as GoogLeNet but implemented in Caffe2; improves resource utilization and mitigates vanishing gradients. \newline Top-5 error from paper: $\sim$6.7\%. \\
-\textbf{\href{validated/vision/classification/inception_and_googlenet/inception_v2}{Inception\_V2}} & \href{https://arxiv.org/abs/1512.00567}{Szegedy et al.} & Adaptation of Inception v1 with batch normalization; reduced computational cost and improved resolution. \newline Top-5 error from paper: $\sim$4.82\%. \\
-\textbf{\href{validated/vision/classification/shufflenet}{ShuffleNet\_V1}} & \href{https://arxiv.org/abs/1707.01083}{Zhang et al.} & Extremely computation-efficient CNN for mobile devices; ~13x speedup over AlexNet on ARM. \newline Top-1 error from paper: $\sim$32.6\%. \\
-\textbf{\href{validated/vision/classification/shufflenet}{ShuffleNet\_V2}} & \href{https://arxiv.org/abs/1807.11164}{Zhang et al.} & Mobile-focused architecture optimized for speed rather than indirect metrics like FLOPs. \newline Top-1 error from paper: $\sim$30.6\%. \\
-\textbf{\href{validated/vision/classification/zfnet-512}{ZFNet-512}} & \href{https://arxiv.org/abs/1311.2901}{Zeiler et al.} & Deep CNN (up to 8 layers) that increases detectable feature granularity for finer image details. \newline Top-5 error from paper: $\sim$14.3\%. \\
-\textbf{\href{validated/vision/classification/efficientnet-lite4}{EfficientNet-Lite4}} & \href{https://arxiv.org/abs/1905.11946}{Tan et al.} & CNN with far fewer computations and parameters while maintaining strong accuracy and efficiency. \newline Top-5 error from paper: $\sim$2.9\%. \\
-\hline
+\caption{Crop disease status}
+\label{tab:crop-disease-status}
+\begin{tabular}{lcc}
+\toprule
+Crop Species & Diseased & Health \\
+\midrule
+Apple        &1527     & 1645    \\
+Blueberry    & 0       & 1502    \\
+Cherry       &1052     & 854     \\
+Corn         & 2690    & 1162    \\
+Grape        & 3640    & 423     \\
+Orange       & 5507    & 0       \\
+Peach        & 360     & 2291    \\
+Bell Pepper  & 997     & 1478    \\
+Potato       & 2000    & 152     \\
+Raspberry    & 0       & 371     \\
+Soybean      & 0       & 5090    \\
+Squash       & 1835    & 0       \\
+Strawberry   & 1109    & 456     \\
+Tomato       & 16570   & 1592    \\
+\bottomrule
 \end{tabular}
-\caption{Validated vision classification models (HuggingFace Spaces column omitted).}
-\label{tab:vision-models}
 \end{table}
+
+\begin{table*}[ht]
+\centering
+\caption{Performance Metrics on PlantVillage Test Set}
+\label{tab:plantvillage-results}
+\begin{tabular}{llcccccc}
+\toprule
+\textbf{Model} & \textbf{Category} & \textbf{Accuracy} & \textbf{Precision} & \textbf{Recall} & \textbf{F1-Score} & \textbf{AUC-ROC} & \textbf{Train Time (s)} \\
+\midrule
+EfficientNet-Lite4 & Lightweight & \textbf{0.9820} & 0.9913 & 0.9838 & \textbf{0.9875} & 0.9982 & 1156.42 \\
+VGG16 & Classical & 0.9705 & 0.9625 & 0.9985 & 0.9801 & \textbf{0.9990} & 1688.80 \\
+ResNet50 & Modern & 0.9709 & \textbf{0.9912} & 0.9686 & 0.9798 & 0.9958 & 987.65 \\
+DenseNet121 & Modern & 0.9676 & 0.9945 & 0.9607 & 0.9773 & 0.9970 & 1245.32 \\
+AlexNet & Classical & 0.9653 & 0.9564 & 0.9978 & 0.9766 & 0.9979 & 538.35 \\
+MobileNet\_v2 & Lightweight & 0.9617 & 0.9958 & 0.9514 & 0.9731 & 0.9962 & 678.54 \\
+ShuffleNet\_v2 & Lightweight & 0.9332 & 0.9859 & 0.9212 & 0.9525 & 0.9883 & 589.21 \\
+ConvNeXt\_Base & Modern & 0.9103 & 0.8907 & \textbf{0.9993} & 0.9419 & 0.9962 & 3341.80 \\
+InceptionV4 & Modern & 0.8809 & 0.8626 & 0.9949 & 0.9240 & 0.9403 & 1139.24 \\
+Xception & Modern & 0.8766 & 0.8569 & 0.9970 & 0.9217 & 0.9739 & 1002.68 \\
+MnasNet1\_0 & Lightweight & 0.8422 & 0.9981 & 0.7845 & 0.8785 & 0.9908 & 712.36 \\
+SqueezeNet1\_0 & Lightweight & 0.8201 & 0.8025 & 0.9982 & 0.8897 & 0.9741 & 498.76 \\
+\bottomrule
+\end{tabular}
+\end{table*}
+
+\begin{table*}[ht]
+\centering
+\caption{Cross-Dataset Performance on PlantDoc Test Set}
+\label{tab:plantdoc-results}
+\begin{tabular}{llccccc}
+\toprule
+\textbf{Model} & \textbf{Category} & \textbf{Accuracy} & \textbf{Precision} & \textbf{Recall} & \textbf{F1-Score} & \textbf{AUC-ROC} \\
+\midrule
+ConvNeXt & Modern & \textbf{0.8390} & 0.8253 & 0.9384 & \textbf{0.8782} & \textbf{0.9173} \\
+AlexNet & Classical & 0.8136 & 0.7802 & 0.9726 & 0.8659 & 0.8932 \\
+VGG16 & Classical & 0.7542 & 0.7245 & 0.9726 & 0.8304 & 0.9137 \\
+DenseNet121 & Modern & 0.7161 & 0.7724 & 0.7671 & 0.7698 & 0.7426 \\
+EfficientNet-Lite4 & Lightweight & 0.6949 & 0.8426 & 0.6233 & 0.7165 & 0.7760 \\
+Xception & Modern & 0.6398 & 0.6356 & 0.9795 & 0.7709 & 0.7594 \\
+InceptionV4 & Modern & 0.6229 & 0.6223 & 0.9932 & 0.7652 & 0.7412 \\
+SqueezeNet1\_0 & Lightweight & 0.6229 & 0.6213 & \textbf{1.0000} & 0.7664 & 0.9091 \\
+MnasNet1\_0 & Lightweight & 0.5085 & \textbf{0.9688} & 0.2123 & 0.3483 & 0.7309 \\
+MobileNet\_v2 & Lightweight & 0.4449 & 0.7778 & 0.1438 & 0.2428 & 0.6237 \\
+ShuffleNet\_v2 & Lightweight & 0.4025 & 1.0000 & 0.0342 & 0.0662 & 0.7981 \\
+ResNet50 & Modern & 0.3263 & 0.3860 & 0.1507 & 0.2167 & 0.2811 \\
+\bottomrule
+\end{tabular}
+\end{table*}
