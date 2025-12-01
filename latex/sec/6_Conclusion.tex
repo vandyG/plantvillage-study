@@ -1,2 +1,19 @@
 \section{Conclusion}
+\label{sec:conclusion}
+
+This study presented a comprehensive evaluation of twelve pretrained deep learning architectures for binary plant disease classification, comparing classical, lightweight, and modern network designs across both in-distribution (PlantVillage) and cross-dataset (PlantDoc) evaluation scenarios.
+
+Our experimental results reveal several key insights for deploying plant disease detection systems in real-world agricultural settings:
+
+\textbf{Architectural Complexity Does Not Guarantee Superior Performance.} Classical architectures, particularly VGG16 and AlexNet, consistently ranked among the top performers across both datasets. VGG16 achieved the highest AUC-ROC (0.9990) on PlantVillage, while AlexNet demonstrated the best efficiency-accuracy trade-off with 96.53\% accuracy on PlantVillage, 81.36\% on PlantDoc, and the fastest inference speed (651 samples/second). These findings challenge the assumption that deeper, more complex networks necessarily provide improved plant disease detection.
+
+\textbf{Generalization Remains a Critical Challenge.} Cross-dataset evaluation exposed significant generalization gaps across all model categories. While EfficientNet-Lite4 achieved the highest in-distribution accuracy (98.20\%), ConvNeXt demonstrated superior cross-dataset transfer (83.90\% on PlantDoc), representing a notable ranking reversal from PlantVillage results. This suggests that optimizing for benchmark performance may not translate to robust real-world deployment.
+
+\textbf{Lightweight Models Exhibit Severe Overfitting.} Despite their computational efficiency, lightweight architectures including MobileNet\_v2 and ShuffleNet\_v2 showed catastrophic performance degradation on PlantDoc (44.49\% and 40.25\% respectively), with extreme prediction biases indicating overfitting to dataset-specific visual patterns. ResNet50 similarly failed with 32.63\% accuracy and inverted probability rankings (AUC-ROC of 0.2811).
+
+\textbf{Practical Recommendations.} For resource-constrained agricultural applications requiring both accuracy and efficiency, AlexNet emerges as the recommended choice due to its balanced performance across datasets and minimal computational requirements. For applications prioritizing maximum generalization capability, ConvNeXt offers superior cross-dataset transfer despite higher computational costs.
+
+\textbf{Limitations and Future Work.} This study focused on binary disease classification; extending the evaluation to multi-class disease identification would provide additional insights. Furthermore, investigating domain adaptation techniques and data augmentation strategies specifically designed to improve cross-dataset generalization represents a promising direction for future research. The development of specialized architectures that prioritize generalization over benchmark optimization may ultimately prove more valuable for practical agricultural deployment.
+
+Our findings underscore the importance of evaluating plant disease detection models beyond single-dataset benchmarks, as model robustness to varying image conditions is paramount for real-world agricultural applications.
 
