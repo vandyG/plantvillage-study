@@ -6,16 +6,18 @@
 %     \includegraphics[width=\linewidth]{sec/Images/health_by_type.png}
 %     \caption{Example images used for data augmentation }
 % \end{figure}
-For this study, we make use of \textbf{PlantVillage} \cite{plantvillage2015} \cite{Mohanty_Hughes_Salathé_2016} dataset, which is one of the most widely used benchmark datasets for plant disease detection and classification tasks. The dataset consists of 54,303 labeled images of healthy and diseased plant leaves belonging to 14 distinct classes. These classes cover a variety of important crops such as \textbf{Apple, Blueberry,
-Cherry, Corn, Grape, Orange, Peach, Bell Pepper, Potato, Raspberry, Soybean, Squash,
-Strawberry, Tomato}, each with multiple disease categories in addition to healthy leaves. It containes images of 17 fungal diseases, 4 bacterial diseases, 2 mold(oomycete) diseases, 2 viral disease, and 1 disease caused by a mite. 12 crop species also have images of healthy leaves that are not visibly affected by a disease.\cite{plantvillage2015}.
+For this study, we make use of \textbf{PlantVillage} \cite{plantvillage2015} \cite{Mohanty_Hughes_Salathé_2016} dataset, which is one of the most widely used benchmark datasets for plant disease detection and classification tasks. The dataset consists of 54,303 labeled images of healthy and diseased plant leaves belonging to 14 distinct classes. These classes cover a variety of important crops such as \textbf{Apple, Blueberry,Cherry, Corn, Grape, Orange, Peach, Bell Pepper, Potato, Raspberry, Soybean, Squash, Strawberry, Tomato}, each with multiple disease categories in addition to healthy leaves (Figure~\ref{fig:example_images}). It containes images of 17 fungal diseases, 4 bacterial diseases, 2 mold(oomycete) diseases, 2 viral disease, and 1 disease caused by a mite. 12 crop species also have images of healthy leaves that are not visibly affected by a disease. See Table~\ref{tab:crop-disease-status}.
+
+The images in PlantVillage were originally collected under controlled conditions with uniform backgrounds, making them suitable for initial model training. However, this also introduces a limitation in terms of generalization to real-world conditions, where background noise, varying illumination, and complex environmental factors are present~\cite{noyan2022uncovering}.
+
+The PlantVillage dataset exhibits a significant degree of class imbalance, with certain crop-disease categories being heavily overrepresented while others contain relatively few samples. Such imbalance can lead to biased model training, where the network becomes disproportionately optimized for the majority classes, resulting in poor generalization for minority categories. To mitigate this issue, several strategies are commonly employed, including oversampling the minority class, undersampling the majority class, applying class-weighted sampling, or using advanced data augmentation techniques. Additionally, relying solely on accuracy as a performance metric can be misleading under such circumstances; therefore, metrics like precision, recall, and F1-score are used to provide a more balanced evaluation of model performance.
+
  \begin{figure}[H]
     \centering
     \includegraphics[width=\linewidth]{sec/Images/example_images.png}
     \caption{Sample images from dataset.}
+    \label{fig:example_images}
 \end{figure}
-The images in PlantVillage were originally collected under controlled conditions with uniform backgrounds, making them suitable for initial model training. However, this also introduces a limitation in terms of generalization to real-world conditions, where background noise, varying illumination, and complex environmental factors are present~\cite{noyan2022uncovering}.
-
 
 \begin{table}[ht]
 \centering
@@ -42,8 +44,6 @@ Tomato       & 16570   & 1592    \\
 \bottomrule
 \end{tabular}
 \end{table}
-
-The PlantVillage dataset exhibits a significant degree of class imbalance, with certain crop-disease categories being heavily overrepresented while others contain relatively few samples. Such imbalance can lead to biased model training, where the network becomes disproportionately optimized for the majority classes, resulting in poor generalization for minority categories. To mitigate this issue, several strategies are commonly employed, including oversampling the minority class, undersampling the majority class, applying class-weighted sampling, or using advanced data augmentation techniques. Additionally, relying solely on accuracy as a performance metric can be misleading under such circumstances; therefore, metrics like precision, recall, and F1-score are used to provide a more balanced evaluation of model performance.
 
 In this study, data augmentation was adopted as the primary approach to alleviate class imbalance. Various augmentation techniques—such as rotation, flipping, illumination adjustment, and scaling—were applied to artificially increase the number of samples in minority classes. For the majority classes, augmentation was performed selectively, with the augmented images replacing existing samples to prevent further expansion of the dominant categories. Despite these measures, residual imbalance may still persist. To further address this, batch-wise balanced training was implemented using TensorFlow's data pipeline, ensuring that each batch presented to the model contains an approximately equal representation of all classes. This strategy promotes fairer learning and enhances the robustness of the trained models across all plant disease categories.
 
