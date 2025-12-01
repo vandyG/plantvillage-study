@@ -43,10 +43,31 @@ Tomato       & 16570   & 1592    \\
 \end{tabular}
 \end{table}
 
-\subsection{Dataset Statistics}
 The PlantVillage dataset exhibits a significant degree of class imbalance, with certain crop-disease categories being heavily overrepresented while others contain relatively few samples. Such imbalance can lead to biased model training, where the network becomes disproportionately optimized for the majority classes, resulting in poor generalization for minority categories. To mitigate this issue, several strategies are commonly employed, including oversampling the minority class, undersampling the majority class, applying class-weighted sampling, or using advanced data augmentation techniques. Additionally, relying solely on accuracy as a performance metric can be misleading under such circumstances; therefore, metrics like precision, recall, and F1-score are used to provide a more balanced evaluation of model performance.
 
-In this study, data augmentation was adopted as the primary approach to alleviate class imbalance. Various augmentation techniques—such as rotation, flipping, illumination adjustment, and scaling—were applied to artificially increase the number of samples in minority classes. For the majority classes, augmentation was performed selectively, with the augmented images replacing existing samples to prevent further expansion of the dominant categories. Despite these measures, residual imbalance may still persist. To further address this, batch-wise balanced training was implemented using TensorFlow’s data pipeline, ensuring that each batch presented to the model contains an approximately equal representation of all classes. This strategy promotes fairer learning and enhances the robustness of the trained models across all plant disease categories.
+In this study, data augmentation was adopted as the primary approach to alleviate class imbalance. Various augmentation techniques—such as rotation, flipping, illumination adjustment, and scaling—were applied to artificially increase the number of samples in minority classes. For the majority classes, augmentation was performed selectively, with the augmented images replacing existing samples to prevent further expansion of the dominant categories. Despite these measures, residual imbalance may still persist. To further address this, batch-wise balanced training was implemented using TensorFlow's data pipeline, ensuring that each batch presented to the model contains an approximately equal representation of all classes. This strategy promotes fairer learning and enhances the robustness of the trained models across all plant disease categories.
+
+\subsection{PlantDoc Dataset for Cross-Dataset Evaluation}
+
+To evaluate the generalization capability of models trained on PlantVillage, we employ the \textbf{PlantDoc} dataset~\cite{plantdoc2020} as an independent test set. PlantDoc is a publicly available dataset specifically designed for visual plant disease detection, containing 2,598 images across 13 plant species and up to 17 disease classes. Unlike PlantVillage, which was collected under controlled laboratory conditions with uniform backgrounds, PlantDoc consists of internet-scraped images that exhibit significant variation in lighting conditions, backgrounds, image quality, and leaf orientations. This makes PlantDoc an excellent benchmark for assessing how well models trained on controlled-environment data generalize to real-world conditions~\cite{plantdoc2020}.
+
+\begin{table}[ht]
+\centering
+\caption{PlantDoc test set class distribution (binary labels)}
+\label{tab:plantdoc-distribution}
+\begin{tabular}{lc}
+\toprule
+Class & Samples \\
+\midrule
+Healthy & 90 \\
+Diseased & 146 \\
+\midrule
+\textbf{Total} & \textbf{236} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The PlantDoc dataset includes 27 distinct folder categories representing different plant-disease combinations such as ``Apple Scab Leaf'', ``Tomato leaf bacterial spot'', ``Corn Gray leaf spot'', and healthy leaves like ``Apple leaf'' or ``Tomato leaf''. For our binary classification task, we mapped these multi-class labels to binary targets: folders containing only the plant name followed by ``leaf'' (e.g., ``Apple leaf'', ``Tomato leaf'') were labeled as healthy ($0$), while folders containing disease indicators such as ``rust'', ``scab'', ``spot'', ``blight'', ``rot'', ``mildew'', ``bacterial'', ``virus'', or ``mosaic'' were labeled as diseased ($1$). This mapping ensures consistency with our PlantVillage-trained models while testing their ability to generalize to visually diverse, real-world plant disease images.
 
 
 
@@ -78,21 +99,21 @@ In this study, data augmentation was adopted as the primary approach to alleviat
 
 % Note: The numbers above follow the stated target scheme and are examples; please update them if you used a different target or generation policy.
 
-\subsection{Data Augmentation}
+% \subsection{Data Augmentation}
 
-Data augmentation increases the effective size and diversity of the training set by applying label-preserving transformations. For minority classes this helps the model see more varied examples of disease symptoms, reducing the risk that the classifier will ignore rare categories. For majority classes we perform selective augmentation and sometimes replace original images with augmented variants for two reasons:
+% Data augmentation increases the effective size and diversity of the training set by applying label-preserving transformations. For minority classes this helps the model see more varied examples of disease symptoms, reducing the risk that the classifier will ignore rare categories. For majority classes we perform selective augmentation and sometimes replace original images with augmented variants for two reasons:
 
-First, prevent overfitting to trivial background cues: PlantVillage images were collected in controlled conditions with uniform backgrounds. If the model memorizes background or camera-specific artifacts present in the majority class, it may not generalize to field images. Replacing some majority-class originals with augmented variants (cropped, color-jittered, or slightly rotated) encourages the model to learn disease-relevant features instead of spurious patterns.
+% First, prevent overfitting to trivial background cues: PlantVillage images were collected in controlled conditions with uniform backgrounds. If the model memorizes background or camera-specific artifacts present in the majority class, it may not generalize to field images. Replacing some majority-class originals with augmented variants (cropped, color-jittered, or slightly rotated) encourages the model to learn disease-relevant features instead of spurious patterns.
 
-Second, Maintain class balance in batches while preserving dataset size: Instead of only increasing the dataset by duplicating/augmenting majority classes (which worsens imbalance), we use augmentation to create alternative views and then sample batches that are balanced across the two binary labels (healthy vs unhealthy). This preserves the overall dataset scale while providing more diverse training signals.
+% Second, Maintain class balance in batches while preserving dataset size: Instead of only increasing the dataset by duplicating/augmenting majority classes (which worsens imbalance), we use augmentation to create alternative views and then sample batches that are balanced across the two binary labels (healthy vs unhealthy). This preserves the overall dataset scale while providing more diverse training signals.
 
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=\linewidth]{sec/Images/augumentation_example.png}
-    \caption{Example of Data-Augmentation}
-    \label{fig:Aug}
-\end{figure}
-The augmentation pipeline used to produce the class balance is described in the Methodology section.
+% \begin{figure}[H]
+%     \centering
+%     \includegraphics[width=\linewidth]{sec/Images/augumentation_example.png}
+%     \caption{Example of Data-Augmentation}
+%     \label{fig:Aug}
+% \end{figure}
+% The augmentation pipeline used to produce the class balance is described in the Methodology section.
 
 
 
