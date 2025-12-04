@@ -79,16 +79,14 @@ Second, Maintain class balance in batches while preserving dataset size: Instead
 
 We used the PlantVillage dataset (loaded via TensorFlow Datasets) and converted the original multi-class labels of the form ``PlantType\_\_\_DiseaseName'' into a binary target by assigning $0 = \text{healthy}$ and $1 = \text{diseased}$ (determined by testing whether the suffix after ``\_\_\_'' equals ``healthy''). 
 
+To mitigate class imbalance we applied a class-specific augmentation and replication scheme implemented in a tf.data pipeline: labels are mapped to binary via a static lookup array and all image augmentations are performed on float32 images in the $\{0,1\}$ range and converted back to uint8 for downstream use. For the healthy class we applied aggressive stochastic augmentations: random horizontal and vertical flips, a random $90^\circ$ rotation $(k \in {0,1,2,3})$, random saturation in $[0.8,1.25]$, random hue offset up to $\pm0.05$, random brightness delta up to $\pm0.12$, and random contrast in $[0.8,1.25]$. For the diseased class we applied milder perturbations and a replacement policy: for each diseased sample, with probability 0.5 we replace the original with an augmented variant produced by random horizontal flip, random $90^\circ$ rotation, contrast in $[0.9,1.1]$, brightness $\pm0.08$ and hue $\pm0.03$; otherwise the original image is retained. (See Figure~\ref{fig:Aug} for example augmentations.)
+
 \begin{figure}[H]
     \centering
     \includegraphics[width=\linewidth]{sec/Images/augumentation_example.png}
     \caption{Example of Data-Augmentation}
     \label{fig:Aug}
 \end{figure}
-
-To mitigate class imbalance we applied a class-specific augmentation and replication scheme implemented in a tf.data pipeline: labels are mapped to binary via a static lookup array and all image augmentations are performed on float32 images in the $\{0,1\}$ range and converted back to uint8 for downstream use. For the healthy class we applied aggressive stochastic augmentations: random horizontal and vertical flips, a random $90^\circ$ rotation $(k \in {0,1,2,3})$, random saturation in $[0.8,1.25]$, random hue offset up to $\pm0.05$, random brightness delta up to $\pm0.12$, and random contrast in $[0.8,1.25]$. For the diseased class we applied milder perturbations and a replacement policy: for each diseased sample, with probability 0.5 we replace the original with an augmented variant produced by random horizontal flip, random $90^\circ$ rotation, contrast in $[0.9,1.1]$, brightness $\pm0.08$ and hue $\pm0.03$; otherwise the original image is retained. (See Figure~\ref{fig:Aug} for example augmentations.)
-
-
 
 To balance classes we computed H and D as the healthy and diseased training counts and set the healthy replication multiplier $m = \max(1, \ceil{(D/H)} - 1)\quad(\text{if }H>0)$, then concatenated the original healthy set with m independently-augmented passes of the healthy set to produce $\approx H\times (m+1)$ healthy examples; augmented diseased samples were concatenated thereafter. See Table~\ref{fig:dist_Aug} for the final class distribution after augmentation.
 
@@ -115,17 +113,96 @@ Diseased & 39220 (47\%) \\
 \end{tabular}
 \end{table}
 
-The combined training set is shuffled (buffer sizes used: 4096 for healthy-stage shuffling, 8192 for final shuffling), prefetched with tf.data.AUTOTUNE, and used for training. For reproducibility we logged TensorFlow and tfds versions, dataset split, and random seeds (tf.random.set\_seed plus numpy/python RNGs) and stored the exact augmentation hyperparameters (saturation, hue, brightness, contrast ranges and diseased replacement probability) alongside experiment metadata.
+\subsection{Model Training}
+
+All models were trained using transfer learning with pretrained ImageNet weights, leveraging PyTorch's torchvision library for standard architectures and the timm library for advanced architectures. This approach provides strong feature initialization while reducing training time and computational requirements.
+
+\subsubsection{Transfer Learning Strategy}
+
+For each architecture, we employed a layer freezing strategy to preserve learned low-level features while adapting the network to our binary classification task. All backbone/feature extraction layers were frozen, and only the final classifier layers were made trainable.
+
+\subsubsection{Training Configuration}
+
+Adam optimizer was used with a lower learning rate ($10^{-4}$) for stable convergence across diverse architectures. Employed Binary Cross-Entropy with Logits (BCEWithLogitsLoss) with sigmoid activation, outputting a single logit per sample. A ReduceLROnPlateau scheduler monitored validation loss and reduced the learning rate when no improvement was observed. This adaptive approach allows aggressive initial learning while ensuring fine-grained convergence in later stages. To prevent overfitting, training was halted if validation loss did not improve for the specified patience period. The model checkpoint with the lowest validation loss was retained as the final model. (See Table~\ref{tab:hyperparameters-b} for full hyperparameter details.)
+
+\begin{table}[ht]
+\centering
+\caption{Training Hyperparameters}
+\label{tab:hyperparameters-b}
+\begin{tabular}{@{}lp{0.48\linewidth}@{}}
+\toprule
+Hyperparameter & Value \\
+\midrule
+Optimizer & Adam \\
+Learning Rate & $1 \times 10^{-4}$ \\
+Loss Function & Binary Cross-Entropy with Logits \\
+Max Epochs & 5 \\
+Early Stopping Patience & 2 epochs \\
+LR Scheduler & ReduceLROnPlateau (mode=min, patience=1) \\
+Random Seed & 42 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+\subsubsection{Memory Optimization Techniques}
+
+Training large pretrained models requires significant GPU memory. We implemented several optimization strategies:
+
+\begin{itemize}
+    \item \textbf{Mixed Precision Training (AMP):} Automatic Mixed Precision was enabled using PyTorch's \texttt{torch.amp} module, performing forward passes in FP16 while maintaining FP32 master weights. This reduces memory consumption by approximately 50\% and accelerates training on modern GPUs.
+    \item \textbf{Gradient Accumulation:} For memory-constrained scenarios, gradients were accumulated over 2 steps before performing weight updates, effectively simulating larger batch sizes without proportional memory increase.
+    \item \textbf{Model-Specific Batch Sizes:} Larger architectures (InceptionV4, Xception) used reduced batch sizes (16) compared to smaller models (AlexNet: 64, VGG16/ResNet50: 32) to fit within GPU memory constraints.
+    \item \textbf{Gradient Checkpointing:} Where supported, gradient checkpointing was enabled to trade computation for memory by recomputing intermediate activations during backpropagation.
+\end{itemize}
+
+\subsubsection{Data Pipeline}
+
+The training pipeline was implemented as a hybrid TensorFlow-PyTorch system for optimal efficiency:
+
+\begin{enumerate}
+    \item \textbf{Data Loading:} PlantVillage dataset was loaded via TensorFlow Datasets (tfds) with streaming access.
+    \item \textbf{Augmentation:} Class-specific augmentations were applied using TensorFlow's \texttt{tf.data} pipeline with parallel processing (\texttt{num\_parallel\_calls=AUTOTUNE}).
+    \item \textbf{Conversion:} Augmented images were converted on-the-fly to PyTorch tensors via a custom \texttt{IterableDataset} wrapper, avoiding disk caching and minimizing memory footprint.
+    \item \textbf{Normalization:} Images were resized to $224 \times 224$ pixels and normalized using ImageNet statistics (mean $= [0.485, 0.456, 0.406]$, std $= [0.229, 0.224, 0.225]$).
+    \item \textbf{Prefetching:} TensorFlow prefetching (buffer size = 2) ensured GPU was never idle waiting for data.
+\end{enumerate}
+
+\subsubsection{Model Summary}
+
+Table~\ref{tab:model-summary} provides an overview of all evaluated architectures, categorized by their design philosophy and computational requirements.
+
+\begin{table}[ht]
+\centering
+\caption{Summary of Evaluated Model Architectures}
+\label{tab:model-summary}
+\begin{tabular}{@{}lcc@{}}
+\toprule
+Model & Params (M) & ImageNet Top-1 (\%) \\
+\midrule
+AlexNet & 61.1 & 56.5 \\
+VGG16 & 138.4 & 71.6 \\
+ResNet50 & 25.6 & 76.1 \\
+DenseNet121 & 8.0 & 74.4 \\
+InceptionV4 & 42.7 & 80.0 \\
+Xception & 22.9 & 79.0 \\
+ConvNeXt Base & 88.6 & 84.1 \\
+MobileNetV2 & 3.5 & 71.9 \\
+ShuffleNetV2 & 2.3 & 69.4 \\
+SqueezeNet 1.0 & 1.2 & 58.1 \\
+MNASNet 1.0 & 4.4 & 73.5 \\
+EfficientNet-Lite4 & 13.0 & 80.4 \\
+\bottomrule
+\end{tabular}
+\end{table}
 
 \subsection{Evaluation Metrics}
 
-To ensure a fair and comprehensive comparison across different pretrained architectures, several quantitative metrics were employed to evaluate model performance. The primary metric used was \textbf{accuracy}, defined as the ratio of correctly classified samples to the total number of samples. While accuracy provides a broad view of performance, it may not fully capture the nuances of class imbalance within the dataset.
-
-Therefore, additional performance metrics were calculated, including \textbf{precision}, \textbf{recall}, and the \textbf{F1-score}. Precision measures the proportion of correctly predicted positive samples out of all samples predicted as positive, whereas recall measures the proportion of correctly predicted positive samples relative to all actual positive samples. The F1-score, being the harmonic mean of precision and recall, offers a balanced assessment of a model's ability to handle false positives and false negatives. These metrics collectively provide a more robust understanding of model behavior under different conditions\cite{oak2024comparative}.
+To ensure a fair and comprehensive comparison across different pretrained architectures, several quantitative metrics were employed to evaluate model performance including accuracy, precision, recall and F1-score.
 
 Furthermore, model performance was also analyzed using the \textbf{Receiver Operating Characteristic (ROC)} curve, which plots the True Positive Rate (TPR) against the False Positive Rate (FPR) at various classification thresholds. The \textbf{Area Under the Curve (AUC)} serves as a single scalar value summarizing the overall discriminative capability of the model—where a higher AUC indicates stronger classification performance.
 
-\textbf{Confusion matrices} were generated for each model to provide a detailed breakdown of classification outcomes, including True Positives (TP), True Negatives (TN), False Positives (FP), and False Negatives (FN). From the confusion matrix, we also derived \textbf{sensitivity} (also known as recall or true positive rate), which measures the model's ability to correctly identify diseased samples, and \textbf{specificity} (true negative rate), which measures the model's ability to correctly identify healthy samples. These metrics are particularly important in agricultural applications where both false alarms and missed detections carry significant consequences.
+\textbf{Confusion matrices} were generated for each model to provide a detailed breakdown of classification outcomes, including True Positives (TP), True Negatives (TN), False Positives (FP), and False Negatives (FN).
 
 Additionally, \textbf{inference speed} (samples per second) was measured to assess the practical deployability of each model, as real-world plant disease detection systems often require rapid classification for timely intervention. Such a multi-metric evaluation ensures that both overall accuracy, per-class discrimination, and computational efficiency are considered in determining the most effective pretrained model for plant disease detection.
 
@@ -137,7 +214,7 @@ The cross-dataset evaluation pipeline was implemented using PyTorch with the fol
 
 \textbf{Preprocessing:} All test images from PlantDoc were resized to $224 \times 224$ pixels to match the input dimensions used during training. Standard ImageNet normalization (mean $= [0.485, 0.456, 0.406]$, std $= [0.229, 0.224, 0.225]$) was applied to ensure consistency with the pretrained model expectations.
 
-\textbf{Label Mapping:} The PlantDoc dataset's multi-class folder structure was converted to binary labels. A rule-based classifier examined folder names for disease-indicating keywords (e.g., ``rust'', ``blight'', ``spot'', ``scab'', ``mildew'', ``bacterial'', ``virus''). Folders without these keywords and containing only ``$<$PlantType$>$ leaf'' patterns were classified as healthy. This automated mapping achieved consistent labeling across all 27 original categories.
+\textbf{Label Mapping:} The PlantDoc dataset's multi-class folder structure was converted to binary labels. A rule-based classifier examined folder names for disease-indicating keywords (e.g., ``rust'', ``blight'', ``spot'', ``scab'', ``mildew'', ``bacterial'', ``virus''). Folders without these keywords and containing only ``$<$PlantType$>$ leaf'' patterns were classified as healthy.
 
 \textbf{Inference:} Models were loaded from their trained checkpoints and evaluated in inference mode with mixed-precision (FP16) for computational efficiency. For each test image, the model produced class probabilities via softmax, and the predicted class was determined by argmax. The probability of the diseased class was retained for ROC analysis.
 
