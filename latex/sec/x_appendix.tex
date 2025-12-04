@@ -1,6 +1,11 @@
 \onecolumn
 \appendix
 \section{Tables}
+\begingroup
+\setlength{\textfloatsep}{10pt plus 2pt minus 2pt}
+\setlength{\floatsep}{8pt plus 2pt minus 2pt}
+\setlength{\intextsep}{8pt plus 2pt minus 2pt}
+\captionsetup[table]{skip=4pt}
 \begin{table}[ht]
 \centering
 \caption{Crop disease status}
@@ -27,6 +32,8 @@ Tomato       & 16570   & 1592    \\
 \end{tabular}
 \end{table}
 
+\vspace{-6pt}
+
 \begin{table*}[ht]
 \centering
 \caption{Performance Metrics on PlantVillage Test Set}
@@ -51,6 +58,8 @@ SqueezeNet1\_0 & Lightweight & 0.8201 & 0.8025 & 0.9982 & 0.8897 & 0.9741 & 498.
 \end{tabular}
 \end{table*}
 
+\vspace{-6pt}
+
 \begin{table*}[ht]
 \centering
 \caption{Cross-Dataset Performance on PlantDoc Test Set}
@@ -74,3 +83,70 @@ ResNet50 & Modern & 0.3263 & 0.3860 & 0.1507 & 0.2167 & 0.2811 \\
 \bottomrule
 \end{tabular}
 \end{table*}
+
+\vspace{-6pt}
+
+\begin{table}[H]
+\centering
+\caption{Computational Efficiency Metrics}
+\label{tab:computational}
+\begin{tabular}{lcc}
+\toprule
+\textbf{Model} & \textbf{Inference Time (s)} & \textbf{Samples/Second} \\
+\midrule
+AlexNet & 1.30 & 182.0 \\
+VGG16 & 1.55 & 152.6 \\
+Xception & 1.44 & 163.8 \\
+InceptionV4 & 1.43 & 164.7 \\
+ConvNeXt\_Base & 2.44 & 96.9 \\
+DenseNet121 & 1.43 & 165.3 \\
+MnasNet1\_0 & 1.39 & 169.6 \\
+MobileNetV2 & 1.48 & 159.1 \\
+ResNet50 & 1.46 & 161.8 \\
+ShuffleNetV2 & 1.46 & 161.8 \\
+SqueezeNet1\_0 & 1.47 & 160.1 \\
+tf\_efficientnet\_lite4 & 1.58 & 149.4 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\vspace{-6pt}
+
+\endgroup
+
+\clearpage
+\section{Figures}
+\begingroup
+\setlength{\textfloatsep}{10pt plus 2pt minus 2pt}
+\setlength{\floatsep}{8pt plus 2pt minus 2pt}
+\setlength{\intextsep}{8pt plus 2pt minus 2pt}
+\captionsetup[figure]{skip=4pt}
+
+\vspace{-4pt}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\linewidth]{sec/Images/train_val_loss_by_cluster.png}
+    \caption{Training vs. Validation Loss Curves by Model Cluster}
+    \label{fig:train-loss}
+\end{figure}
+
+\vspace{-6pt}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\linewidth]{sec/Images/roc_curves_combined.png}
+    \caption{ROC Curves Analysis - PlantVillage Dataset}
+    \label{fig:roc-plantvillage}
+\end{figure}
+
+\vspace{-6pt}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\linewidth]{sec/Images/plantdoc_roc_curves_combined.png}
+    \caption{ROC Curves Analysis - PlantDoc Cross-Dataset Evaluation}
+    \label{fig:roc-plantdoc}
+\end{figure}
+
+\endgroup
